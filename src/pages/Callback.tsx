@@ -9,9 +9,14 @@ export function Callback() {
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get("code");
     if (code) {
-      login(code).then(() => navigate("/dashboard"));
+      login(code)
+        .then(() => navigate("/dashboard"))
+        .catch((err) => {
+          console.error("Login callback failed:", err);
+          navigate("/");
+        });
     }
-  }, []);
+  }, [login, navigate]);
 
   return <p className="text-center mt-20 text-gray-500">Authenticating...</p>;
 }

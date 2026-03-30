@@ -23,9 +23,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
       });
-      const { access_token } = await res.json();
-      localStorage.setItem("gh_token", access_token);
-      setToken(access_token);
+
+      if (res.status === 404) {
+        throw new Error(
+          "Exchange token endpoint not found (404). Use `npm run dev` and verify vite.config.ts has middleware or run `npx vercel dev`.",
+        );
+      }
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "");
+        throw new Error(
+          `Exchange token request failed: ${res.status} ${res.statusText} ${errorText}`,
+        );
+      }
+
+      const bodyText = await res.text();
+      if (!bodyText) throw new Error("Exchange token response is empty");
+
+      const data = JSON.parse(bodyText);
+      if (!data?.access_token)
+        throw new Error("No access_token returned from exchange-token API");
+
+      localStorage.setItem("gh_token", data.access_token);
+      setToken(data.access_token);
+    } catch (err) {
+      console.error("Login failed:", err);
+      throw err;
     } finally {
       setIsLoading(false);
     }
